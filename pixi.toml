@@ -18,6 +18,7 @@ test-dot-product = "mojo tests/block0/01_vector_matrix_ops/test_02_dot_product.m
 # Block 0 - Section 1: Vector/Matrix Ops
 vector-add = "mojo src/block0/01_vector_matrix_ops/01_vector_add.mojo"
 dot-product = "mojo src/block0/01_vector_matrix_ops/02_dot_product.mojo"
+matrix-vector-multiply = "mojo src/block0/01_vector_matrix_ops/03_matrix_vector_multiply.mojo"
 
 # Visualizations - Block 0
 viz-dot-product = "python scripts/block0/01_vector_matrix_ops/visualize_dot_product.py"

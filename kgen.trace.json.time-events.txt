@@ -1,2 +1,22 @@
 Thread   Start(us)  B/E     Dur(us)  Name/Detail
 ------  ----------  ---  ----------  ------------------------------
+1055753     1407275  BEG        2725  AnnotateKernels
+1055753     1410001  END        2725  AnnotateKernels
+1055753     1410003  BEG         532  VerifyKernels
+1055753     1410536  END         532  VerifyKernels
+1055753     1410537  BEG        4184  LowerSemanticCF
+1055753     1414722  END        4184  LowerSemanticCF
+1055753     1414724  BEG       57922  CheckLifetimes
+1055753     1417068  BEG          10  (A) SymbolTableAnalysis
+1055753     1417078  END          10  (A) SymbolTableAnalysis
+1055753     1472647  END       57922  CheckLifetimes
+1055753    11948702  BEG        1862  AnnotateKernels
+1055753    11950564  END        1862  AnnotateKernels
+1055753    11950566  BEG         355  VerifyKernels
+1055753    11950922  END         355  VerifyKernels
+1055753    11950923  BEG        3491  LowerSemanticCF
+1055753    11954415  END        3491  LowerSemanticCF
+1055753    11954416  BEG       53139  CheckLifetimes
+1055753    11956162  BEG          10  (A) SymbolTableAnalysis
+1055753    11956173  END          10  (A) SymbolTableAnalysis
+1055753    12007556  END       53139  CheckLifetimes
