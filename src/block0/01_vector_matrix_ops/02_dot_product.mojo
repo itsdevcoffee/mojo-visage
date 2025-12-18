@@ -6,6 +6,7 @@ Goal: The most important operation in ML - multiply and sum.
 Foundation of neural networks, attention, and matrix operations.
 """
 
+
 fn dot_product(a: List[Float64], b: List[Float64]) raises -> Float64:
     """
     Compute dot product: a · b = a[0]*b[0] + a[1]*b[1] + ... + a[n]*b[n].
@@ -31,8 +32,13 @@ fn dot_product(a: List[Float64], b: List[Float64]) raises -> Float64:
     """
     # STEP 1: Shape validation
     if len(a) != len(b):
-        raise Error("Shape mismatch: vectors must have same length. "
-                   + "Got " + String(len(a)) + " and " + String(len(b)))
+        raise Error(
+            "Shape mismatch: vectors must have same length. "
+            + "Got "
+            + String(len(a))
+            + " and "
+            + String(len(b))
+        )
 
     # STEP 2: Initialize accumulator
     var result: Float64 = 0.0

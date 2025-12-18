@@ -78,23 +78,48 @@ fn matrix_matrix_multiply(
         Error if A's columns ≠ B's rows (inner dimensions must match)
     """
     # STEP 1: Shape validation
-    # TODO: Add shape validation here!
-    # Hint: if len(A[0]) != len(B): raise Error(...)
+    # A's columns must equal B's rows
+    if len(A) == 0 or len(B) == 0:
+        raise Error("Empty matrix")
+
+    var A_cols = len(A[0])  # Number of columns in A
+    var B_rows = len(B)     # Number of rows in B
+
+    if A_cols != B_rows:
+        raise Error("Shape mismatch: A columns must equal B rows. "
+                   + "Got A: (?, " + String(A_cols) + ") and B: (" + String(B_rows) + ", ?)")
 
     # STEP 2: Get dimensions
-    # TODO: Calculate m, n, p dimensions
-    # Hint: m = len(A), n = len(A[0]), p = len(B[0])
+    var m = len(A)        # Number of rows in A (and C)
+    var n = len(A[0])     # Number of columns in A = rows in B
+    var p = len(B[0])     # Number of columns in B (and C)
+
+    # Result will be (m × p)
 
     # STEP 3: Create result matrix (m × p)
-    # TODO: Initialize result as empty 2D list
+    var result = List[List[Float64]]()  # 2D list for matrix
 
     # STEP 4: For each row in A:
     #   For each column in B:
     #     C[i,j] = row i of A · column j of B
 
-    # TODO: Implement the nested loops!
+    for i in range(m):  # For each row of A
+        var row = List[Float64]()  # Create a row for the result
 
-    pass  # Remove this when you implement
+        for j in range(p):  # For each column of B
+            # Get column j from B
+            var B_column = get_column(B, j)
+
+            # Compute dot product: A[i] · B[:,j]
+            var value = dot_product(A[i], B_column)
+
+            # Store in result row
+            row.append(value)
+
+        # Add this row to result matrix
+        result.append(row^)
+
+    return result^
 
 
 # ============================================================================

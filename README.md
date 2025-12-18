@@ -1,6 +1,6 @@
-# Mojo ML From Scratch 🔥
+# Mojo Visage 🔥
 
-> **Build Machine Learning from fundamentals to LLMs in Mojo**
+> **A Mojo ML/AI library built from scratch**
 > Learn by implementing everything yourself: Linear Algebra → Neural Networks → Transformers → Language Models
 
 [![Mojo](https://img.shields.io/badge/Mojo-0.26.1-orange?logo=fire)](https://docs.modular.com/mojo/)
@@ -55,8 +55,8 @@ Block 11: Chat + Tool Use          [░░░░░░░░░░]  0%
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/mojo-ml-from-scratch.git
-cd mojo-ml-from-scratch
+git clone https://github.com/itsdevcoffee/mojo-visage.git
+cd mojo-visage
 
 # Install dependencies (Mojo, Python, NumPy, matplotlib)
 pixi install
@@ -109,7 +109,7 @@ pixi run test-all
 ## 📂 Project Structure
 
 ```
-mojo-ml-from-scratch/
+mojo-visage/
 ├── src/
 │   └── block0/
 │       ├── 01_vector_matrix_ops/
@@ -251,4 +251,4 @@ If you find this helpful, consider giving it a star! It helps others discover th
 
 ---
 
-**Built with Mojo 🔥 | Learning in Public | [Follow the Journey](https://github.com/yourusername/mojo-ml-from-scratch)**
+**Built with Mojo 🔥 | Learning in Public | [Follow the Journey](https://github.com/itsdevcoffee/mojo-visage)**
