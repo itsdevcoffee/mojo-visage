@@ -17,6 +17,7 @@ test-all = "mojo -I src tests/test_linalg.mojo"
 # Examples
 example-basic = "mojo -I src examples/basic_operations.mojo"
 example-nn = "mojo -I src examples/neural_network_layer.mojo"
+example-network = "mojo -I src examples/simple_neural_network.mojo"
 
 # Development
 repl = "mojo"

@@ -1,6 +1,10 @@
 """Tests for visage library operations."""
 
-from visage import vector_add, dot_product, matrix_vector_multiply
+from visage import (
+    vector_add, dot_product, matrix_vector_multiply,
+    matrix_matrix_multiply, transpose,
+    elementwise_multiply, elementwise_divide, scalar_multiply
+)
 
 
 fn test_vector_add() raises:
@@ -108,6 +112,90 @@ fn test_matrix_vector_multiply() raises:
     print("  ✓ All matrix_vector_multiply tests passed")
 
 
+fn test_matrix_matrix_multiply() raises:
+    """Test matrix-matrix multiplication."""
+    print("Testing matrix_matrix_multiply...")
+
+    var A: List[List[Float64]] = [
+        [1.0, 2.0],
+        [3.0, 4.0]
+    ]
+    var B: List[List[Float64]] = [
+        [5.0, 6.0],
+        [7.0, 8.0]
+    ]
+    var C = matrix_matrix_multiply(A, B)
+
+    # Expected: [[19, 22], [43, 50]]
+    assert_equal(C[0][0], 19.0, "C[0,0] should be 19")
+    assert_equal(C[0][1], 22.0, "C[0,1] should be 22")
+    assert_equal(C[1][0], 43.0, "C[1,0] should be 43")
+    assert_equal(C[1][1], 50.0, "C[1,1] should be 50")
+
+    print("  ✓ All matrix_matrix_multiply tests passed")
+
+
+fn test_transpose() raises:
+    """Test matrix transpose."""
+    print("Testing transpose...")
+
+    var matrix: List[List[Float64]] = [
+        [1.0, 2.0, 3.0],
+        [4.0, 5.0, 6.0]
+    ]
+    var T = transpose(matrix)
+
+    # Shape should be 3x2
+    assert_equal(len(T), 3, "Transposed should have 3 rows")
+    assert_equal(len(T[0]), 2, "Transposed rows should have 2 elements")
+
+    # Check values
+    assert_equal(T[0][0], 1.0, "T[0,0] should be 1")
+    assert_equal(T[0][1], 4.0, "T[0,1] should be 4")
+    assert_equal(T[1][0], 2.0, "T[1,0] should be 2")
+    assert_equal(T[1][1], 5.0, "T[1,1] should be 5")
+    assert_equal(T[2][0], 3.0, "T[2,0] should be 3")
+    assert_equal(T[2][1], 6.0, "T[2,1] should be 6")
+
+    print("  ✓ All transpose tests passed")
+
+
+fn test_elementwise_operations() raises:
+    """Test element-wise operations."""
+    print("Testing elementwise operations...")
+
+    var a: List[Float64] = [2.0, 4.0, 6.0]
+    var b: List[Float64] = [1.0, 2.0, 3.0]
+
+    # Element-wise multiply
+    var prod = elementwise_multiply(a, b)
+    assert_equal(prod[0], 2.0, "2*1 should be 2")
+    assert_equal(prod[1], 8.0, "4*2 should be 8")
+    assert_equal(prod[2], 18.0, "6*3 should be 18")
+
+    # Element-wise divide
+    var quot = elementwise_divide(a, b)
+    assert_equal(quot[0], 2.0, "2/1 should be 2")
+    assert_equal(quot[1], 2.0, "4/2 should be 2")
+    assert_equal(quot[2], 2.0, "6/3 should be 2")
+
+    print("  ✓ All elementwise operation tests passed")
+
+
+fn test_scalar_multiply() raises:
+    """Test scalar multiplication."""
+    print("Testing scalar_multiply...")
+
+    var vec: List[Float64] = [1.0, 2.0, 3.0]
+    var result = scalar_multiply(2.5, vec)
+
+    assert_equal(result[0], 2.5, "2.5*1 should be 2.5")
+    assert_equal(result[1], 5.0, "2.5*2 should be 5.0")
+    assert_equal(result[2], 7.5, "2.5*3 should be 7.5")
+
+    print("  ✓ All scalar_multiply tests passed")
+
+
 fn assert_equal(value: Float64, expected: Float64, message: String) raises:
     """Assert that value equals expected."""
     if value != expected:
@@ -136,6 +224,10 @@ fn main() raises:
     test_vector_add_errors()
     test_dot_product()
     test_matrix_vector_multiply()
+    test_matrix_matrix_multiply()
+    test_transpose()
+    test_elementwise_operations()
+    test_scalar_multiply()
 
     print("\n" + "="*50)
     print("✓ All tests passed!")
