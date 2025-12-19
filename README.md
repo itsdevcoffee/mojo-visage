@@ -51,18 +51,23 @@ pixi run test-all
 ## Example Usage
 
 ```mojo
-from visage import vector_add, dot_product
+from visage import vector_add, dot_product, matrix_vector_multiply
 
 fn main() raises:
     # Basic vector operations
-    var a = List[Float64](1.0, 2.0, 3.0)
-    var b = List[Float64](4.0, 5.0, 6.0)
+    var a: List[Float64] = [1.0, 2.0, 3.0]
+    var b: List[Float64] = [4.0, 5.0, 6.0]
 
     var sum = vector_add(a, b)      # [5.0, 7.0, 9.0]
     var dot = dot_product(a, b)     # 32.0
 
     print(sum)
     print(dot)
+```
+
+To use the library in your own code:
+```bash
+mojo -I src your_file.mojo
 ```
 
 ---

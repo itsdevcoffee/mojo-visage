@@ -6,25 +6,37 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-# Development tasks
-hello = "mojo src/hello.mojo"
-repl = "mojo"
+# =============================================================================
+# Library Tasks (Production Code)
+# =============================================================================
 
 # Testing
-test-all = "bash scripts/common/run_tests.sh"
-test-vector-add = "mojo tests/block0/01_vector_matrix_ops/test_01_vector_add.mojo"
-test-dot-product = "mojo tests/block0/01_vector_matrix_ops/test_02_dot_product.mojo"
+test = "mojo -I src tests/test_linalg.mojo"
+test-all = "mojo -I src tests/test_linalg.mojo"
 
-# Block 0 - Section 1: Vector/Matrix Ops
-vector-add = "mojo src/block0/01_vector_matrix_ops/01_vector_add.mojo"
-dot-product = "mojo src/block0/01_vector_matrix_ops/02_dot_product.mojo"
-matrix-vector-multiply = "mojo src/block0/01_vector_matrix_ops/03_matrix_vector_multiply.mojo"
+# Examples
+example-basic = "mojo -I src examples/basic_operations.mojo"
+example-nn = "mojo -I src examples/neural_network_layer.mojo"
 
-# Visualizations - Block 0
-viz-dot-product = "python scripts/block0/01_vector_matrix_ops/visualize_dot_product.py"
+# Development
+repl = "mojo"
 
-# Block 1 (coming soon)
-block1 = "echo 'Block 1 not yet implemented'"
+# =============================================================================
+# Learning Tasks (Educational Content in learn/ directory)
+# =============================================================================
+
+# Learning: Block 0 - Vector/Matrix Ops
+learn-vector-add = "mojo learn/src/block0/01_vector_matrix_ops/01_vector_add.mojo"
+learn-dot-product = "mojo learn/src/block0/01_vector_matrix_ops/02_dot_product.mojo"
+learn-matrix-vector-multiply = "mojo learn/src/block0/01_vector_matrix_ops/03_matrix_vector_multiply.mojo"
+
+# Learning: Tests
+learn-test-all = "bash learn/scripts/common/run_tests.sh"
+learn-test-vector-add = "mojo learn/tests/block0/01_vector_matrix_ops/test_01_vector_add.mojo"
+learn-test-dot-product = "mojo learn/tests/block0/01_vector_matrix_ops/test_02_dot_product.mojo"
+
+# Learning: Visualizations
+learn-viz-dot-product = "python learn/scripts/block0/01_vector_matrix_ops/visualize_dot_product.py"
 
 [dependencies]
 max = ">=26.1.0.dev2025121105,<27"
