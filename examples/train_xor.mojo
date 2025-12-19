@@ -39,7 +39,7 @@ fn sigmoid_vector(vec: List[Float64]) -> List[Float64]:
 
 
 fn sigmoid_derivative(x: Float64) -> Float64:
-    """Derivative of sigmoid: σ(x) * (1 - σ(x))"""
+    """Derivative of sigmoid: σ(x) * (1 - σ(x))."""
     var s = sigmoid(x)
     return s * (1.0 - s)
 
@@ -74,7 +74,7 @@ fn mse_loss(predictions: List[Float64], targets: List[Float64]) raises -> Float6
 
 struct TwoLayerNetwork:
     """
-    Simple 2-layer network: input → hidden → output
+    Simple 2-layer network: input → hidden → output.
 
     Stores weights, biases, and intermediate values needed for backprop.
     """
@@ -94,26 +94,26 @@ struct TwoLayerNetwork:
         """Initialize with small random weights."""
         # Layer 1: input_size → hidden_size
         self.w1 = List[List[Float64]]()
-        for i in range(hidden_size):
+        for _ in range(hidden_size):
             var row = List[Float64]()
-            for j in range(input_size):
+            for _ in range(input_size):
                 row.append(random_float64(-0.5, 0.5))
             self.w1.append(row^)
 
         self.b1 = List[Float64]()
-        for i in range(hidden_size):
+        for _ in range(hidden_size):
             self.b1.append(0.0)
 
         # Layer 2: hidden_size → output_size
         self.w2 = List[List[Float64]]()
-        for i in range(output_size):
+        for _ in range(output_size):
             var row = List[Float64]()
-            for j in range(hidden_size):
+            for _ in range(hidden_size):
                 row.append(random_float64(-0.5, 0.5))
             self.w2.append(row^)
 
         self.b2 = List[Float64]()
-        for i in range(output_size):
+        for _ in range(output_size):
             self.b2.append(0.0)
 
         # Initialize cache
@@ -290,15 +290,15 @@ fn main() raises:
 
         var target_class = Int(target_value)
 
-        var correct = ""
+        # Print result with checkmark
         if pred_class == target_class:
-            correct = "✓"
+            print("Input:", X[i], "| Target:", target_value,
+                  "| Prediction:", pred_value,
+                  "| Class:", pred_class, "✓")
         else:
-            correct = "✗"
-
-        print("Input:", X[i], "| Target:", target_value,
-              "| Prediction:", pred_value,
-              "| Class:", pred_class, correct)
+            print("Input:", X[i], "| Target:", target_value,
+                  "| Prediction:", pred_value,
+                  "| Class:", pred_class, "✗")
 
     print("\n" + "="*70)
     print("✓ Training complete! Network learned XOR!")
