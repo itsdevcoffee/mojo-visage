@@ -138,6 +138,79 @@ fn softmax(x: List[Float64]) -> List[Float64]:
 
 
 # ==============================================================================
+# Activation Derivatives (for Backpropagation)
+# ==============================================================================
+
+fn relu_derivative(x: Float64) -> Float64:
+    """
+    Derivative of ReLU: 1 if x > 0, else 0
+
+    Used in backpropagation to compute gradients.
+
+    Args:
+        x: Original input to ReLU
+
+    Returns:
+        Gradient: 1.0 if x > 0, else 0.0
+    """
+    if x > 0:
+        return 1.0
+    return 0.0
+
+
+fn relu_derivative_vector(x: List[Float64]) -> List[Float64]:
+    """Apply ReLU derivative element-wise."""
+    var result = List[Float64]()
+    for i in range(len(x)):
+        result.append(relu_derivative(x[i]))
+    return result^
+
+
+fn sigmoid_derivative(x: Float64) -> Float64:
+    """
+    Derivative of sigmoid: σ(x) * (1 - σ(x))
+
+    Args:
+        x: Original input to sigmoid
+
+    Returns:
+        Gradient
+    """
+    var s = sigmoid(x)
+    return s * (1.0 - s)
+
+
+fn sigmoid_derivative_vector(x: List[Float64]) -> List[Float64]:
+    """Apply sigmoid derivative element-wise."""
+    var result = List[Float64]()
+    for i in range(len(x)):
+        result.append(sigmoid_derivative(x[i]))
+    return result^
+
+
+fn tanh_derivative(x: Float64) -> Float64:
+    """
+    Derivative of tanh: 1 - tanh²(x)
+
+    Args:
+        x: Original input to tanh
+
+    Returns:
+        Gradient
+    """
+    var t = tanh(x)
+    return 1.0 - (t * t)
+
+
+fn tanh_derivative_vector(x: List[Float64]) -> List[Float64]:
+    """Apply tanh derivative element-wise."""
+    var result = List[Float64]()
+    for i in range(len(x)):
+        result.append(tanh_derivative(x[i]))
+    return result^
+
+
+# ==============================================================================
 # Loss Functions
 # ==============================================================================
 
@@ -206,6 +279,42 @@ fn binary_cross_entropy(
         loss += -(y * exp(p) + (1.0 - y) * exp(1.0 - p))
 
     return loss / len(predictions)
+
+
+# ==============================================================================
+# Loss Derivatives (for Backpropagation)
+# ==============================================================================
+
+fn mse_loss_derivative(
+    predictions: List[Float64],
+    targets: List[Float64]
+) raises -> List[Float64]:
+    """
+    Derivative of MSE loss: 2/n * (predictions - targets)
+
+    Used to start backpropagation from the loss.
+
+    Args:
+        predictions: Model outputs
+        targets: True values
+
+    Returns:
+        Gradient of loss w.r.t. predictions
+
+    Raises:
+        Error if lengths don't match
+    """
+    if len(predictions) != len(targets):
+        raise Error("Predictions and targets must have same length")
+
+    var gradient = List[Float64]()
+    var n = Float64(len(predictions))
+
+    for i in range(len(predictions)):
+        var grad = (2.0 / n) * (predictions[i] - targets[i])
+        gradient.append(grad)
+
+    return gradient^
 
 
 # ==============================================================================
