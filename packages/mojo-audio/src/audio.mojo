@@ -5,7 +5,7 @@ SIMD-optimized DSP operations for machine learning audio preprocessing.
 Designed for Whisper and other speech recognition models.
 """
 
-from math import cos, sqrt, log
+from math import cos, sqrt, log, sin, atan2
 from math.constants import pi
 
 
@@ -18,6 +18,253 @@ comptime WHISPER_N_FFT = 400
 comptime WHISPER_HOP_LENGTH = 160
 comptime WHISPER_N_MELS = 80
 comptime WHISPER_FRAMES_30S = 3000
+
+
+# ==============================================================================
+# Complex Number Operations
+# ==============================================================================
+
+struct Complex(Copyable, Movable):
+    """Complex number for FFT operations."""
+    var real: Float64
+    var imag: Float64
+
+    fn __init__(out self, real: Float64, imag: Float64 = 0.0):
+        """Initialize complex number."""
+        self.real = real
+        self.imag = imag
+
+    fn __copyinit__(out self, existing: Self):
+        """Copy constructor."""
+        self.real = existing.real
+        self.imag = existing.imag
+
+    fn __moveinit__(out self, deinit existing: Self):
+        """Move constructor."""
+        self.real = existing.real
+        self.imag = existing.imag
+
+    fn __add__(self, other: Complex) -> Complex:
+        """Complex addition."""
+        return Complex(self.real + other.real, self.imag + other.imag)
+
+    fn __sub__(self, other: Complex) -> Complex:
+        """Complex subtraction."""
+        return Complex(self.real - other.real, self.imag - other.imag)
+
+    fn __mul__(self, other: Complex) -> Complex:
+        """Complex multiplication."""
+        var r = self.real * other.real - self.imag * other.imag
+        var i = self.real * other.imag + self.imag * other.real
+        return Complex(r, i)
+
+    fn magnitude(self) -> Float64:
+        """Compute magnitude: sqrt(real² + imag²)."""
+        return sqrt(self.real * self.real + self.imag * self.imag)
+
+    fn power(self) -> Float64:
+        """Compute power: real² + imag²."""
+        return self.real * self.real + self.imag * self.imag
+
+
+# ==============================================================================
+# FFT Operations
+# ==============================================================================
+
+fn next_power_of_2(n: Int) -> Int:
+    """Find next power of 2 >= n."""
+    var power = 1
+    while power < n:
+        power *= 2
+    return power
+
+
+fn fft_internal(signal: List[Float64]) raises -> List[Complex]:
+    """Internal FFT - requires power of 2 length."""
+    var N = len(signal)
+
+    # Validate power of 2
+    if N == 0 or (N & (N - 1)) != 0:
+        raise Error("Internal FFT requires power of 2. Got " + String(N))
+
+    # Base case
+    if N == 1:
+        var result = List[Complex]()
+        result.append(Complex(signal[0], 0.0))
+        return result^
+
+    # Divide into even and odd indices
+    var even = List[Float64]()
+    var odd = List[Float64]()
+
+    for i in range(N // 2):
+        even.append(signal[2 * i])
+        odd.append(signal[2 * i + 1])
+
+    # Recursive FFT on even and odd parts
+    var fft_even = fft_internal(even)
+    var fft_odd = fft_internal(odd)
+
+    # Combine results
+    var result = List[Complex]()
+
+    # Initialize result list
+    for _ in range(N):
+        result.append(Complex(0.0, 0.0))
+
+    # Combine using butterfly operations
+    for k in range(N // 2):
+        var k_float = Float64(k)
+        var N_float = Float64(N)
+
+        # Twiddle factor: W = e^(-2πik/N)
+        var angle = -2.0 * pi * k_float / N_float
+        var twiddle = Complex(cos(angle), sin(angle))
+
+        # Butterfly operation
+        var t = twiddle * fft_odd[k]
+        result[k] = fft_even[k] + t
+        result[k + N // 2] = fft_even[k] - t
+
+    return result^
+
+
+fn fft(signal: List[Float64]) raises -> List[Complex]:
+    """
+    Fast Fourier Transform using Cooley-Tukey algorithm.
+
+    Automatically pads to next power of 2 if needed.
+    Handles Whisper's n_fft=400 by padding to 512.
+
+    Args:
+        signal: Input signal (any length)
+
+    Returns:
+        Complex frequency spectrum (padded length)
+
+    Example:
+        ```mojo
+        var signal: List[Float64] = [1.0, 0.0, 1.0, 0.0]
+        var spectrum = fft(signal)  # Length 4 (already power of 2)
+
+        var whisper_frame: List[Float64] = [...]  # 400 samples
+        var spec = fft(whisper_frame)  # Padded to 512
+        ```
+    """
+    var N = len(signal)
+
+    # Pad to next power of 2 if needed
+    var fft_size = next_power_of_2(N)
+
+    var padded = List[Float64]()
+    for i in range(N):
+        padded.append(signal[i])
+    for _ in range(N, fft_size):
+        padded.append(0.0)
+
+    # Call internal FFT (requires power of 2)
+    return fft_internal(padded)
+
+
+fn power_spectrum(fft_output: List[Complex]) -> List[Float64]:
+    """
+    Compute power spectrum from FFT output.
+
+    Power = real² + imag² for each frequency bin.
+
+    Args:
+        fft_output: Complex FFT coefficients
+
+    Returns:
+        Power values (real-valued)
+
+    Example:
+        ```mojo
+        var spectrum = fft(signal)
+        var power = power_spectrum(spectrum)
+        ```
+    """
+    var result = List[Float64]()
+
+    for i in range(len(fft_output)):
+        result.append(fft_output[i].power())
+
+    return result^
+
+
+fn stft(
+    signal: List[Float64],
+    n_fft: Int = 400,
+    hop_length: Int = 160,
+    window_fn: String = "hann"
+) raises -> List[List[Float64]]:
+    """
+    Short-Time Fourier Transform - Apply FFT to windowed frames.
+
+    Creates spectrogram: frequency content over time.
+
+    Args:
+        signal: Input audio signal
+        n_fft: FFT size (window size)
+        hop_length: Step size between frames
+        window_fn: "hann" or "hamming"
+
+    Returns:
+        Spectrogram (n_fft/2+1, n_frames)
+
+    Example:
+        ```mojo
+        var audio: List[Float64] = [...]  # 30s of audio
+        var spec = stft(audio, n_fft=400, hop_length=160)
+        ```
+
+    For 30s audio @ 16kHz with hop=160:
+        n_frames = (480000 - 400) / 160 + 1 = 3000 ✓
+    """
+    # Create window
+    var window: List[Float64]
+    if window_fn == "hann":
+        window = hann_window(n_fft)
+    elif window_fn == "hamming":
+        window = hamming_window(n_fft)
+    else:
+        raise Error("Unknown window function: " + window_fn)
+
+    # Calculate number of frames
+    var num_frames = (len(signal) - n_fft) // hop_length + 1
+
+    # Initialize result
+    var spectrogram = List[List[Float64]]()
+
+    # Process each frame
+    for frame_idx in range(num_frames):
+        var start = frame_idx * hop_length
+
+        # Extract frame
+        var frame = List[Float64]()
+        for i in range(n_fft):
+            if start + i < len(signal):
+                frame.append(signal[start + i])
+            else:
+                frame.append(0.0)  # Pad if needed
+
+        # Apply window
+        var windowed = apply_window(frame, window)
+
+        # Compute FFT
+        var fft_result = fft(windowed)
+
+        # Get power spectrum (magnitude squared)
+        var power = power_spectrum(fft_result)
+
+        # Take first half (n_fft/2 + 1) - positive frequencies only
+        var frame_power = List[Float64]()
+        for i in range(n_fft // 2 + 1):
+            frame_power.append(power[i])
+
+        spectrogram.append(frame_power^)
+
+    return spectrogram^
 
 
 # ==============================================================================

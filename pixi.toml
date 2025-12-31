@@ -28,10 +28,14 @@ repl = "mojo"
 # =============================================================================
 
 # Testing
-audio-test = "mojo -I packages/mojo-audio/src packages/mojo-audio/tests/test_window.mojo"
+audio-test-window = "mojo -I packages/mojo-audio/src packages/mojo-audio/tests/test_window.mojo"
+audio-test-fft = "mojo -I packages/mojo-audio/src packages/mojo-audio/tests/test_fft.mojo"
+audio-test = "mojo -I packages/mojo-audio/src packages/mojo-audio/tests/test_window.mojo && mojo -I packages/mojo-audio/src packages/mojo-audio/tests/test_fft.mojo"
 
 # Examples
-audio-demo = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/window_demo.mojo"
+audio-demo-window = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/window_demo.mojo"
+audio-demo-fft = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/fft_demo.mojo"
+audio-demo = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/window_demo.mojo && mojo -I packages/mojo-audio/src packages/mojo-audio/examples/fft_demo.mojo"
 
 # =============================================================================
 # Learning Tasks (Educational Content in learn/ directory)
