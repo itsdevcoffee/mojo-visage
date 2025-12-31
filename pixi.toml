@@ -39,6 +39,10 @@ audio-demo-fft = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/f
 audio-demo-mel = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/mel_demo.mojo"
 audio-demo = "mojo -I packages/mojo-audio/src packages/mojo-audio/examples/mel_demo.mojo"
 
+# Benchmarks
+audio-bench = "mojo -I packages/mojo-audio/src packages/mojo-audio/benchmarks/bench_mel_spectrogram.mojo"
+audio-bench-python = "python packages/mojo-audio/benchmarks/compare_librosa.py"
+
 # =============================================================================
 # Learning Tasks (Educational Content in learn/ directory)
 # =============================================================================
