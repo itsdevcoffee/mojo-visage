@@ -1,0 +1,7 @@
+[package]
+name = "mojo-audio"
+version = "0.1.0"
+
+[paths]
+# Tell LSP where to find modules
+src = ["src"]

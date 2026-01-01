@@ -5,7 +5,7 @@ Measures time to compute mel spectrogram for various audio lengths.
 """
 
 from audio import mel_spectrogram
-from time import now
+from time import perf_counter_ns
 
 
 fn benchmark_mel_spec(audio_seconds: Int, iterations: Int) raises:
@@ -21,12 +21,12 @@ fn benchmark_mel_spec(audio_seconds: Int, iterations: Int) raises:
     _ = mel_spectrogram(audio)
 
     # Benchmark
-    var start = now()
+    var start = perf_counter_ns()
 
     for _ in range(iterations):
         _ = mel_spectrogram(audio)
 
-    var end = now()
+    var end = perf_counter_ns()
 
     var total_ns = end - start
     var avg_ms = Float64(total_ns) / Float64(iterations) / 1_000_000.0
