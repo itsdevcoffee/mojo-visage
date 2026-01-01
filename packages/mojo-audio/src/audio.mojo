@@ -168,12 +168,37 @@ fn log2_int(n: Int) -> Int:
     return result
 
 
+fn precompute_twiddle_factors(N: Int) -> List[Complex]:
+    """
+    Pre-compute all twiddle factors for FFT of size N.
+
+    Twiddle factor: W_N^k = e^(-2πik/N) = cos(-2πk/N) + i*sin(-2πk/N)
+
+    Eliminates expensive transcendental function calls from FFT hot loop.
+    MAJOR performance improvement!
+
+    Args:
+        N: FFT size (power of 2)
+
+    Returns:
+        Twiddle factors for all stages
+    """
+    var twiddles = List[Complex]()
+
+    # Pre-compute all twiddles we'll need for all stages
+    for i in range(N):
+        var angle = -2.0 * pi * Float64(i) / Float64(N)
+        twiddles.append(Complex(cos(angle), sin(angle)))
+
+    return twiddles^
+
+
 fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
     """
     Iterative FFT using Cooley-Tukey algorithm.
 
-    Better cache locality than recursive version.
-    More suitable for SIMD optimization.
+    Optimized with pre-computed twiddle factors!
+    No cos/sin in hot loop = massive speedup.
 
     Args:
         signal: Input (length must be power of 2)
@@ -187,6 +212,9 @@ fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
     if N == 0 or (N & (N - 1)) != 0:
         raise Error("FFT requires power of 2. Got " + String(N))
 
+    # PRE-COMPUTE twiddle factors (KEY OPTIMIZATION!)
+    var twiddles = precompute_twiddle_factors(N)
+
     # Initialize output with bit-reversed input
     var result = List[Complex]()
     var log2_n = log2_int(N)
@@ -199,17 +227,15 @@ fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
     var size = 2
     while size <= N:
         var half_size = size // 2
+        var stride = N // size  # Twiddle factor stride
 
         # Process each butterfly group
         for i in range(0, N, size):
-            # Compute twiddle factors for this group
+            # Use pre-computed twiddles (no cos/sin!)
             for k in range(half_size):
-                var k_float = Float64(k)
-                var size_float = Float64(size)
-
-                # Twiddle factor: W = e^(-2πik/size)
-                var angle = -2.0 * pi * k_float / size_float
-                var twiddle = Complex(cos(angle), sin(angle))
+                # Index into pre-computed twiddle table
+                var twiddle_idx = k * stride
+                var twiddle = Complex(twiddles[twiddle_idx].real, twiddles[twiddle_idx].imag)
 
                 # Butterfly operation indices
                 var idx1 = i + k
