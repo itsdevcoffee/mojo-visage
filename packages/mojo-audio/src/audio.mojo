@@ -193,12 +193,71 @@ fn precompute_twiddle_factors(N: Int) -> List[Complex]:
     return twiddles^
 
 
+fn fft_iterative_with_twiddles(
+    signal: List[Float64],
+    twiddles: List[Complex]
+) raises -> List[Complex]:
+    """
+    Iterative FFT with pre-provided twiddle factors.
+
+    For repeated FFTs of same size (like STFT), reuse twiddles!
+
+    Args:
+        signal: Input (power of 2)
+        twiddles: Pre-computed twiddle factors
+
+    Returns:
+        Complex frequency spectrum
+    """
+    var N = len(signal)
+
+    if N == 0 or (N & (N - 1)) != 0:
+        raise Error("FFT requires power of 2")
+
+    if len(twiddles) < N:
+        raise Error("Insufficient twiddle factors")
+
+    # Bit-reversed initialization
+    var result = List[Complex]()
+    var log2_n = log2_int(N)
+
+    for i in range(N):
+        var reversed_idx = bit_reverse(i, log2_n)
+        result.append(Complex(signal[reversed_idx], 0.0))
+
+    # Butterfly with cached twiddles
+    var size = 2
+    while size <= N:
+        var half_size = size // 2
+        var stride = N // size
+
+        for i in range(0, N, size):
+            for k in range(half_size):
+                var twiddle_idx = k * stride
+                var twiddle = Complex(twiddles[twiddle_idx].real, twiddles[twiddle_idx].imag)
+
+                var idx1 = i + k
+                var idx2 = i + k + half_size
+
+                var t = twiddle * Complex(result[idx2].real, result[idx2].imag)
+                var u = Complex(result[idx1].real, result[idx1].imag)
+
+                var sum_val = u + t
+                var diff_val = u - t
+
+                result[idx1] = Complex(sum_val.real, sum_val.imag)
+                result[idx2] = Complex(diff_val.real, diff_val.imag)
+
+        size *= 2
+
+    return result^
+
+
 fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
     """
     Iterative FFT using Cooley-Tukey algorithm.
 
-    Optimized with pre-computed twiddle factors!
-    No cos/sin in hot loop = massive speedup.
+    Computes twiddles on-the-fly. For repeated FFTs, use fft_iterative_with_twiddles!
 
     Args:
         signal: Input (length must be power of 2)
@@ -212,48 +271,11 @@ fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
     if N == 0 or (N & (N - 1)) != 0:
         raise Error("FFT requires power of 2. Got " + String(N))
 
-    # PRE-COMPUTE twiddle factors (KEY OPTIMIZATION!)
+    # Compute twiddles
     var twiddles = precompute_twiddle_factors(N)
 
-    # Initialize output with bit-reversed input
-    var result = List[Complex]()
-    var log2_n = log2_int(N)
-
-    for i in range(N):
-        var reversed_idx = bit_reverse(i, log2_n)
-        result.append(Complex(signal[reversed_idx], 0.0))
-
-    # Iterative butterfly operations
-    var size = 2
-    while size <= N:
-        var half_size = size // 2
-        var stride = N // size  # Twiddle factor stride
-
-        # Process each butterfly group
-        for i in range(0, N, size):
-            # Use pre-computed twiddles (no cos/sin!)
-            for k in range(half_size):
-                # Index into pre-computed twiddle table
-                var twiddle_idx = k * stride
-                var twiddle = Complex(twiddles[twiddle_idx].real, twiddles[twiddle_idx].imag)
-
-                # Butterfly operation indices
-                var idx1 = i + k
-                var idx2 = i + k + half_size
-
-                # Butterfly computation (make explicit copies)
-                var t = twiddle * Complex(result[idx2].real, result[idx2].imag)
-                var u = Complex(result[idx1].real, result[idx1].imag)
-
-                var sum_val = u + t
-                var diff_val = u - t
-
-                result[idx1] = Complex(sum_val.real, sum_val.imag)
-                result[idx2] = Complex(diff_val.real, diff_val.imag)
-
-        size *= 2
-
-    return result^
+    # Call optimized version with twiddles
+    return fft_iterative_with_twiddles(signal, twiddles)
 
 
 fn fft_internal(signal: List[Float64]) raises -> List[Complex]:
@@ -404,6 +426,45 @@ fn power_spectrum(fft_output: List[Complex]) -> List[Float64]:
     return result^
 
 
+fn rfft_with_twiddles(
+    signal: List[Float64],
+    twiddles: List[Complex]
+) raises -> List[Complex]:
+    """
+    RFFT using cached twiddles (avoid recomputation!).
+
+    For STFT processing 3000 frames, this saves 2999 twiddle computations!
+
+    Args:
+        signal: Real-valued input
+        twiddles: Pre-computed twiddles for padded size
+
+    Returns:
+        Positive frequencies only
+    """
+    var N = len(signal)
+    var fft_size = next_power_of_2(N)
+
+    # Pad
+    var padded = List[Float64]()
+    for i in range(N):
+        padded.append(signal[i])
+    for _ in range(N, fft_size):
+        padded.append(0.0)
+
+    # Use cached twiddles!
+    var full_fft = fft_iterative_with_twiddles(padded, twiddles)
+
+    # Return positive freqs
+    var positive_freqs = List[Complex]()
+    var half = fft_size // 2
+
+    for i in range(half + 1):
+        positive_freqs.append(Complex(full_fft[i].real, full_fft[i].imag))
+
+    return positive_freqs^
+
+
 fn stft(
     signal: List[Float64],
     n_fft: Int = 400,
@@ -413,7 +474,7 @@ fn stft(
     """
     Short-Time Fourier Transform - Apply FFT to windowed frames.
 
-    Creates spectrogram: frequency content over time.
+    Optimized: Caches twiddle factors across all frames!
 
     Args:
         signal: Input audio signal
@@ -424,16 +485,9 @@ fn stft(
     Returns:
         Spectrogram (n_fft/2+1, n_frames)
 
-    Example:
-        ```mojo
-        var audio: List[Float64] = [...]  # 30s of audio
-        var spec = stft(audio, n_fft=400, hop_length=160)
-        ```
-
-    For 30s audio @ 16kHz with hop=160:
-        n_frames = (480000 - 400) / 160 + 1 = 3000 ✓
+    For 30s audio @ 16kHz: 3000 frames
     """
-    # Create window
+    # Create window once
     var window: List[Float64]
     if window_fn == "hann":
         window = hann_window(n_fft)
@@ -442,13 +496,17 @@ fn stft(
     else:
         raise Error("Unknown window function: " + window_fn)
 
+    # PRE-COMPUTE twiddles ONCE for all frames! (HUGE win for STFT)
+    var fft_size = next_power_of_2(n_fft)
+    var cached_twiddles = precompute_twiddle_factors(fft_size)
+
     # Calculate number of frames
     var num_frames = (len(signal) - n_fft) // hop_length + 1
 
     # Initialize result
     var spectrogram = List[List[Float64]]()
 
-    # Process each frame
+    # Process each frame (reusing cached twiddles!)
     for frame_idx in range(num_frames):
         var start = frame_idx * hop_length
 
@@ -458,18 +516,18 @@ fn stft(
             if start + i < len(signal):
                 frame.append(signal[start + i])
             else:
-                frame.append(0.0)  # Pad if needed
+                frame.append(0.0)
 
-        # Apply window (SIMD-optimized)
+        # Apply window
         var windowed = apply_window_simd(frame, window)
 
-        # Compute RFFT (optimized for real audio - 2x faster!)
-        var fft_result = rfft(windowed)
+        # RFFT with CACHED twiddles (no recomputation!)
+        var fft_result = rfft_with_twiddles(windowed, cached_twiddles)
 
-        # Get power spectrum (magnitude squared)
+        # Power spectrum
         var full_power = power_spectrum(fft_result)
 
-        # Take only first n_fft/2+1 bins (corresponding to original size)
+        # Take needed bins
         var frame_power = List[Float64]()
         var needed_bins = n_fft // 2 + 1
         for i in range(needed_bins):
