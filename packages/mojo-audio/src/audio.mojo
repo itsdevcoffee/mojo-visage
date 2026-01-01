@@ -199,54 +199,99 @@ fn next_power_of_2(n: Int) -> Int:
     return power
 
 
-fn fft_internal(signal: List[Float64]) raises -> List[Complex]:
-    """Internal FFT - requires power of 2 length."""
+fn bit_reverse(n: Int, bits: Int) -> Int:
+    """
+    Reverse bits of integer n using 'bits' number of bits.
+
+    Used for FFT bit-reversal permutation.
+    """
+    var result = 0
+    var x = n
+    for _ in range(bits):
+        result = (result << 1) | (x & 1)
+        x >>= 1
+    return result
+
+
+fn log2_int(n: Int) -> Int:
+    """Compute log2 of power-of-2 integer."""
+    var result = 0
+    var x = n
+    while x > 1:
+        x >>= 1
+        result += 1
+    return result
+
+
+fn fft_iterative(signal: List[Float64]) raises -> List[Complex]:
+    """
+    Iterative FFT using Cooley-Tukey algorithm.
+
+    Better cache locality than recursive version.
+    More suitable for SIMD optimization.
+
+    Args:
+        signal: Input (length must be power of 2)
+
+    Returns:
+        Complex frequency spectrum
+    """
     var N = len(signal)
 
     # Validate power of 2
     if N == 0 or (N & (N - 1)) != 0:
-        raise Error("Internal FFT requires power of 2. Got " + String(N))
+        raise Error("FFT requires power of 2. Got " + String(N))
 
-    # Base case
-    if N == 1:
-        var result = List[Complex]()
-        result.append(Complex(signal[0], 0.0))
-        return result^
-
-    # Divide into even and odd indices
-    var even = List[Float64]()
-    var odd = List[Float64]()
-
-    for i in range(N // 2):
-        even.append(signal[2 * i])
-        odd.append(signal[2 * i + 1])
-
-    # Recursive FFT on even and odd parts
-    var fft_even = fft_internal(even)
-    var fft_odd = fft_internal(odd)
-
-    # Combine results
+    # Initialize output with bit-reversed input
     var result = List[Complex]()
+    var log2_n = log2_int(N)
 
-    # Initialize result list
-    for _ in range(N):
-        result.append(Complex(0.0, 0.0))
+    for i in range(N):
+        var reversed_idx = bit_reverse(i, log2_n)
+        result.append(Complex(signal[reversed_idx], 0.0))
 
-    # Combine using butterfly operations
-    for k in range(N // 2):
-        var k_float = Float64(k)
-        var N_float = Float64(N)
+    # Iterative butterfly operations
+    var size = 2
+    while size <= N:
+        var half_size = size // 2
 
-        # Twiddle factor: W = e^(-2πik/N)
-        var angle = -2.0 * pi * k_float / N_float
-        var twiddle = Complex(cos(angle), sin(angle))
+        # Process each butterfly group
+        for i in range(0, N, size):
+            # Compute twiddle factors for this group
+            for k in range(half_size):
+                var k_float = Float64(k)
+                var size_float = Float64(size)
 
-        # Butterfly operation
-        var t = twiddle * fft_odd[k]
-        result[k] = fft_even[k] + t
-        result[k + N // 2] = fft_even[k] - t
+                # Twiddle factor: W = e^(-2πik/size)
+                var angle = -2.0 * pi * k_float / size_float
+                var twiddle = Complex(cos(angle), sin(angle))
+
+                # Butterfly operation indices
+                var idx1 = i + k
+                var idx2 = i + k + half_size
+
+                # Butterfly computation (make explicit copies)
+                var t = twiddle * Complex(result[idx2].real, result[idx2].imag)
+                var u = Complex(result[idx1].real, result[idx1].imag)
+
+                var sum_val = u + t
+                var diff_val = u - t
+
+                result[idx1] = Complex(sum_val.real, sum_val.imag)
+                result[idx2] = Complex(diff_val.real, diff_val.imag)
+
+        size *= 2
 
     return result^
+
+
+fn fft_internal(signal: List[Float64]) raises -> List[Complex]:
+    """
+    Internal FFT - uses iterative algorithm for better performance.
+
+    Delegates to iterative FFT which has better cache locality.
+    """
+    return fft_iterative(signal)
 
 
 fn fft(signal: List[Float64]) raises -> List[Complex]:
@@ -531,9 +576,10 @@ fn apply_mel_filterbank(
     filterbank: List[List[Float64]]
 ) raises -> List[List[Float64]]:
     """
-    Apply mel filterbank to power spectrogram.
+    Apply mel filterbank to power spectrogram (optimized).
 
     Converts linear frequency bins to mel-spaced bins.
+    Optimized: Pre-allocates memory, minimizes allocations.
 
     Args:
         spectrogram: Power spectrogram (n_freq_bins, n_frames)
@@ -566,15 +612,22 @@ fn apply_mel_filterbank(
     for mel_idx in range(n_mels):
         var mel_band = List[Float64]()
 
+        # Pre-allocate for this mel band
+        for _ in range(n_frames):
+            mel_band.append(0.0)
+
         # For each time frame
         for frame_idx in range(n_frames):
             var mel_energy: Float64 = 0.0
 
-            # Sum weighted frequency bins
+            # Sum weighted frequency bins (dot product)
+            # Only process non-zero filter weights
             for freq_idx in range(n_freq_bins):
-                mel_energy += filterbank[mel_idx][freq_idx] * spectrogram[frame_idx][freq_idx]
+                var filter_weight = filterbank[mel_idx][freq_idx]
+                if filter_weight > 0.0:  # Skip zero weights
+                    mel_energy += filter_weight * spectrogram[frame_idx][freq_idx]
 
-            mel_band.append(mel_energy)
+            mel_band[frame_idx] = mel_energy
 
         mel_spec.append(mel_band^)
 
